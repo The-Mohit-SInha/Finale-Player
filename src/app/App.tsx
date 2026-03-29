@@ -2,51 +2,55 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Plus, X, Trash2, ChevronLeft, ChevronRight, ListPlus } from 'lucide-react';
 import { PlaylistView } from './components/PlaylistView';
-import inTheNameOfLoveCover from 'figma:asset/34a199c48a8309b2f4f0c1ea540f282823cd1ba5.png';
+import { Song, Playlist } from './types';
+import { 
+  saveSongs, 
+  loadSongs, 
+  savePlaylists, 
+  loadPlaylists, 
+  savePlayerState, 
+  loadPlayerState 
+} from './utils/localStorage';
 import somethingJustLikeThisCover from 'figma:asset/c5b26616743de6ddeb77a46c2fea8422eea82d43.png';
 import treatYouBetterCover from 'figma:asset/5d8b4216b3689b7056af840be43a28d2ebfd994c.png';
 import sailorSongCover from 'figma:asset/b1815cbffcc5bbef367938a591b2a431611fd3fb.png';
 
-interface Song {
-  id: number;
-  title: string;
-  artist: string;
-  cover: string;
-  audioUrl: string;
-  colors: {
-    background: string;
-    blob1: string;
-    blob2: string;
-    blob3: string;
-    line: string;
-    text: string;
-  };
-  lines: {
-    path1: string;
-    path2: string;
-  };
-  circles: {
-    x: number;
-    y: number;
-    size: number;
-    color: string;
-  }[];
-}
-
-interface Playlist {
-  id: number;
-  name: string;
-  songIds: number[];
-  createdAt: Date;
-}
+// Helper function to generate random circles for songs
+const generateRandomCircles = () => [
+  { 
+    x: 15 + Math.random() * 20, 
+    y: 15 + Math.random() * 15, 
+    size: 260 + Math.random() * 60, 
+    color: `hsl(${Math.random() * 360}, 40%, 70%)` 
+  },
+  { 
+    x: 65 + Math.random() * 20, 
+    y: 55 + Math.random() * 20, 
+    size: 300 + Math.random() * 80, 
+    color: `hsl(${Math.random() * 360}, 35%, 65%)` 
+  },
+  { 
+    x: 30 + Math.random() * 25, 
+    y: 70 + Math.random() * 18, 
+    size: 220 + Math.random() * 60, 
+    color: `hsl(${Math.random() * 360}, 38%, 68%)` 
+  },
+  { 
+    x: 80 + Math.random() * 15, 
+    y: 25 + Math.random() * 20, 
+    size: 280 + Math.random() * 70, 
+    color: `hsl(${Math.random() * 360}, 42%, 72%)` 
+  }
+];
 
 export default function App() {
-  const [songs, setSongs] = useState<Song[]>([
+  // Default songs data
+  const defaultSongs: Song[] = [
     {
       id: 1,
       title: "IN THE NAME OF LOVE",
       artist: "MARTIN GARRIX AND BEBE REXHA",
-      cover: inTheNameOfLoveCover,
+      cover: "https://image2url.com/r2/default/images/1774792537755-1b63188a-5ee5-4936-bbbc-a6a0b38c4a17.jpg",
       audioUrl: "https://image2url.com/r2/default/audio/1774466339946-5ac00fec-af07-4b30-9da6-f07844c22800.mp3",
       colors: {
         background: "#c5e8e8",
@@ -71,7 +75,7 @@ export default function App() {
       id: 2,
       title: "SOMETHING JUST LIKE THIS",
       artist: "THE CHAINSMOKERS & COLDPLAY",
-      cover: somethingJustLikeThisCover,
+      cover: "https://image2url.com/r2/default/images/1774792867308-fbd92a10-3fa5-4fac-8ddf-f535bcc39b19.jpg",
       audioUrl: "https://image2url.com/r2/default/audio/1774465884658-9f0041a5-e127-4c51-9d92-f9ac5a04ff62.mp3",
       colors: {
         background: "#d8d8d8",
@@ -96,7 +100,7 @@ export default function App() {
       id: 3,
       title: "SAILOR SONG",
       artist: "GIGI PEREZ",
-      cover: sailorSongCover,
+      cover: "https://image2url.com/r2/default/images/1774792959946-3f9ec1b0-a2e2-4b84-94fe-cb088b26e38e.jpg",
       audioUrl: "https://image2url.com/r2/default/audio/1774467088631-ea702763-bd11-4775-890e-289b15501088.mp3",
       colors: {
         background: "#e8e8e8",
@@ -121,7 +125,7 @@ export default function App() {
       id: 4,
       title: "TREAT YOU BETTER",
       artist: "SHAWN MENDES",
-      cover: treatYouBetterCover,
+      cover: "https://image2url.com/r2/default/images/1774793019293-05db69b3-7302-48de-a121-d51a3ee88109.jpg",
       audioUrl: "https://image2url.com/r2/default/audio/1774466746434-68d05c0b-78e6-4897-9fb2-630abe3d8793.mp3",
       colors: {
         background: "#c8d8d0",
@@ -142,26 +146,45 @@ export default function App() {
         { x: 88, y: 28, size: 320, color: "#98c0b8" }
       ]
     }
-  ]);
-  const [currentSongIndex, setCurrentSongIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isShuffleOn, setIsShuffleOn] = useState(false);
-  const [isRepeatOn, setIsRepeatOn] = useState(false);
+  ];
+  
+  // Load initial data from localStorage
+  const savedSongs = loadSongs();
+  const savedPlaylists = loadPlaylists();
+  const initialPlayerState = loadPlayerState();
+  
+  // Initialize songs with circles
+  const initialSongsData = (savedSongs || defaultSongs).map(song => ({
+    ...song,
+    circles: song.circles || generateRandomCircles()
+  }));
+  
+  // Initialize state with localStorage data or defaults
+  const [songs, setSongs] = useState<Song[]>(initialSongsData);
+  const [playlists, setPlaylists] = useState<Playlist[]>(savedPlaylists || []);
+
+  // Ensure currentSongIndex is valid for the songs array
+  const validCurrentSongIndex = initialPlayerState?.currentSongIndex ?? 0;
+  const safeSongIndex = validCurrentSongIndex < initialSongsData.length ? validCurrentSongIndex : 0;
+  
+  const [currentSongIndex, setCurrentSongIndex] = useState(safeSongIndex);
+  const [isPlaying, setIsPlaying] = useState(false); // Always start paused
+  const [currentTime, setCurrentTime] = useState(initialPlayerState?.currentTime ?? 0);
+  const [duration, setDuration] = useState(initialPlayerState?.duration ?? 0);
+  const [isShuffleOn, setIsShuffleOn] = useState(initialPlayerState?.isShuffleOn ?? false);
+  const [isRepeatOn, setIsRepeatOn] = useState(initialPlayerState?.isRepeatOn ?? false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isPlaylistsOpen, setIsPlaylistsOpen] = useState(false);
   const [isAllSongsOpen, setIsAllSongsOpen] = useState(false);
   const [isQueueOpen, setIsQueueOpen] = useState(false);
-  const [queue, setQueue] = useState<number[]>([]);
-  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [queue, setQueue] = useState<number[]>(initialPlayerState?.queue ?? []);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
   const [selectedPlaylistForAdding, setSelectedPlaylistForAdding] = useState<number | null>(null);
-  const [activePlaylistId, setActivePlaylistId] = useState<number | null>(null);
-  const [preQueuePlaylistId, setPreQueuePlaylistId] = useState<number | null>(null);
-  const [preQueueSongIndex, setPreQueueSongIndex] = useState<number | null>(null);
+  const [activePlaylistId, setActivePlaylistId] = useState<number | null>(initialPlayerState?.activePlaylistId ?? null);
+  const [preQueuePlaylistId, setPreQueuePlaylistId] = useState<number | null>(initialPlayerState?.preQueuePlaylistId ?? null);
+  const [preQueueSongIndex, setPreQueueSongIndex] = useState<number | null>(initialPlayerState?.preQueueSongIndex ?? null);
   const [viewingPlaylistId, setViewingPlaylistId] = useState<number | null>(null);
   const [isAddSongOpen, setIsAddSongOpen] = useState(false);
   const [songToAddToPlaylist, setSongToAddToPlaylist] = useState<number | null>(null);
@@ -449,13 +472,88 @@ export default function App() {
           line: newSong.lineColor,
           text: newSong.textColor
         },
-        lines: randomLines
+        lines: randomLines,
+        circles: generateRandomCircles()
       };
 
       setSongs([...songs, createdSong]);
       handleAddSongClose();
     }
   };
+
+  // Load initial playback time when song changes
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio && initialPlayerState && currentSongIndex === initialPlayerState.currentSongIndex) {
+      audio.currentTime = initialPlayerState.currentTime;
+    }
+  }, []);
+
+  // Save songs to localStorage whenever they change
+  useEffect(() => {
+    saveSongs(songs);
+  }, [songs]);
+
+  // Save playlists to localStorage whenever they change
+  useEffect(() => {
+    savePlaylists(playlists);
+  }, [playlists]);
+
+  // Save player state to localStorage (debounced for currentTime)
+  useEffect(() => {
+    // Save immediately when key states change (not currentTime)
+    const playerState = {
+      currentSongIndex,
+      isPlaying,
+      currentTime,
+      duration,
+      isShuffleOn,
+      isRepeatOn,
+      queue,
+      activePlaylistId,
+      preQueuePlaylistId,
+      preQueueSongIndex,
+    };
+    
+    // Debounce currentTime saves to avoid excessive localStorage writes
+    const timeoutId = setTimeout(() => {
+      savePlayerState(playerState);
+    }, 1000); // Save after 1 second of no changes
+    
+    return () => clearTimeout(timeoutId);
+  }, [
+    currentSongIndex,
+    isPlaying,
+    currentTime,
+    duration,
+    isShuffleOn,
+    isRepeatOn,
+    queue,
+    activePlaylistId,
+    preQueuePlaylistId,
+    preQueueSongIndex,
+  ]);
+  
+  // Save player state immediately when pausing or key events happen
+  useEffect(() => {
+    const playerState = {
+      currentSongIndex,
+      isPlaying,
+      currentTime,
+      duration,
+      isShuffleOn,
+      isRepeatOn,
+      queue,
+      activePlaylistId,
+      preQueuePlaylistId,
+      preQueueSongIndex,
+    };
+    
+    // Save immediately when pausing, changing songs, or toggling settings
+    if (!isPlaying || isShuffleOn || isRepeatOn) {
+      savePlayerState(playerState);
+    }
+  }, [isPlaying, currentSongIndex, isShuffleOn, isRepeatOn]);
 
   useEffect(() => {
     const audio = audioRef.current;

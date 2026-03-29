@@ -1,11 +1,16 @@
-import { Song } from '../types';
+/**
+ * Local Storage Utility
+ * 
+ * This module handles saving and loading music player data to/from browser's localStorage.
+ * All data persists across browser sessions until manually cleared.
+ * 
+ * Stored Data:
+ * - Songs: All songs including user-created ones
+ * - Playlists: User-created playlists with song references
+ * - Player State: Current playback state, settings, and queue
+ */
 
-export interface Playlist {
-  id: number;
-  name: string;
-  songIds: number[];
-  createdAt: Date;
-}
+import { Song, Playlist } from '../types';
 
 export interface PlayerState {
   currentSongIndex: number;
