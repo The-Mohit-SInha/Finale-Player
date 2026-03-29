@@ -847,14 +847,14 @@ export default function App() {
 
   return (
     <div 
-      className="size-full flex items-center justify-center overflow-hidden relative transition-colors duration-1000"
+      className="size-full min-h-screen flex items-center justify-center overflow-hidden relative transition-colors duration-1000 py-4 md:py-0"
       style={{ backgroundColor: currentSong.colors.background }}
     >
       {/* Top Right Cover Circle with Glassmorphism */}
       <AnimatePresence>
         <motion.div
           key={`cover-circle-${currentSong.id}`}
-          className="absolute -top-[600px] -right-[600px] w-[1400px] h-[1400px] rounded-full overflow-hidden pointer-events-none"
+          className="absolute -top-[300px] -right-[300px] w-[700px] h-[700px] md:-top-[600px] md:-right-[600px] md:w-[1400px] md:h-[1400px] rounded-full overflow-hidden pointer-events-none"
           style={{ 
             zIndex: 1,
             backgroundImage: `url(${currentSong.cover})`,
@@ -983,8 +983,8 @@ export default function App() {
       </div>
 
       {/* Right Side Vertical Text */}
-      <div className="absolute right-8 top-1/2 -translate-y-1/2 z-[9999]">
-        <div className="flex flex-col gap-12">
+      <div className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 z-[9999]">
+        <div className="flex flex-col gap-6 md:gap-12">
           <button
             onClick={handleSearchClick}
             className="text-xs tracking-[0.3em] writing-mode-vertical hover:opacity-100 transition-opacity cursor-pointer"
@@ -2072,12 +2072,12 @@ export default function App() {
       </AnimatePresence>
 
       {/* Main Content Container */}
-      <div className="relative z-20 flex items-center justify-between w-full max-w-6xl px-20">
+      <div className="relative z-20 flex flex-col md:flex-row items-center justify-center md:justify-between w-full max-w-md md:max-w-6xl px-6 md:px-20 gap-6 md:gap-0">
         
         {/* Left Controls Panel */}
-        <div className="flex flex-col items-center gap-8 w-64">
+        <div className="flex flex-col items-center gap-4 md:gap-8 w-full md:w-64 order-2 md:order-1">
           {/* Play Controls */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 md:gap-6">
             <button
               onClick={handlePrevious}
               className="p-2 hover:bg-white/10 rounded-full transition-colors"
@@ -2090,9 +2090,9 @@ export default function App() {
               className="p-2 hover:bg-white/10 rounded-full transition-transform hover:scale-110"
             >
               {isPlaying ? (
-                <Pause size={64} strokeWidth={1.5} color={currentSong.colors.text} />
+                <Pause size={64} strokeWidth={1.5} color={currentSong.colors.text} className="w-12 h-12 md:w-16 md:h-16" />
               ) : (
-                <Play size={64} strokeWidth={1.5} color={currentSong.colors.text} fill={currentSong.colors.text} />
+                <Play size={64} strokeWidth={1.5} color={currentSong.colors.text} fill={currentSong.colors.text} className="w-12 h-12 md:w-16 md:h-16" />
               )}
             </button>
 
@@ -2127,7 +2127,7 @@ export default function App() {
           </div>
 
           {/* Bottom Controls */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-6 md:gap-8">
             <button 
               onClick={() => setIsShuffleOn(!isShuffleOn)}
               className="p-2 rounded-full transition-all relative"
@@ -2172,7 +2172,7 @@ export default function App() {
         </div>
 
         {/* Center Album Cover */}
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-4 md:gap-6 order-1 md:order-2">
           <AnimatePresence mode="wait">
             <motion.div
               key={`cover-${currentSong.id}`}
@@ -2182,7 +2182,7 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
             >
-              <div className="w-96 h-96 rounded-3xl overflow-hidden shadow-2xl bg-white/10 backdrop-blur-sm p-3">
+              <div className="w-[280px] h-[280px] md:w-96 md:h-96 rounded-3xl overflow-hidden shadow-2xl bg-white/10 backdrop-blur-sm p-2 md:p-3">
                 <div className="w-full h-full rounded-2xl overflow-hidden">
                   <img 
                     src={currentSong.cover} 
@@ -2205,7 +2205,7 @@ export default function App() {
               transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
             >
               <h1 
-                className="text-xl tracking-wider mb-1"
+                className="text-base md:text-xl tracking-wider mb-1"
                 style={{ color: currentSong.colors.text, opacity: 0.7 }}
               >
                 {currentSong.title}
@@ -2221,9 +2221,9 @@ export default function App() {
         </div>
 
         {/* Right Panel - Up Next */}
-        <div className="w-64 flex flex-col items-start gap-3">
+        <div className="w-full md:w-64 flex flex-col items-center md:items-start gap-2 md:gap-3 order-3">
           <div 
-            className="text-xs tracking-wider mb-2"
+            className="text-xs tracking-wider mb-0 md:mb-2"
             style={{ color: currentSong.colors.text, opacity: 0.5 }}
           >
             UP NEXT &gt;&gt;
@@ -2231,13 +2231,14 @@ export default function App() {
           <AnimatePresence mode="wait">
             <motion.div
               key={`next-${nextSong.id}`}
+              className="text-center md:text-left"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.5 }}
             >
               <h3 
-                className="text-lg tracking-wide"
+                className="text-sm md:text-lg tracking-wide"
                 style={{ color: currentSong.colors.text, opacity: 0.6 }}
               >
                 {nextSong.title}
@@ -2254,7 +2255,7 @@ export default function App() {
       </div>
 
       {/* Bottom Center - Pagination Dots */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+      <div className="absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-2">
         {songs.map((song, index) => (
           <button
             key={song.id}
