@@ -847,7 +847,7 @@ export default function App() {
 
   return (
     <div 
-      className="w-full h-screen flex items-center justify-center overflow-hidden relative transition-colors duration-1000"
+      className="size-full flex items-center justify-center overflow-hidden relative transition-colors duration-1000"
       style={{ backgroundColor: currentSong.colors.background }}
     >
       {/* Top Right Cover Circle with Glassmorphism */}
@@ -2072,10 +2072,10 @@ export default function App() {
       </AnimatePresence>
 
       {/* Main Content Container */}
-      <div className="relative z-20 flex items-center justify-between w-full max-w-[1600px] px-16 gap-16">
+      <div className="relative z-20 flex items-center justify-between w-full max-w-6xl px-20">
         
         {/* Left Controls Panel */}
-        <div className="flex flex-col items-center gap-8 w-80 shrink-0">
+        <div className="flex flex-col items-center gap-8 w-64">
           {/* Play Controls */}
           <div className="flex items-center gap-6">
             <button
@@ -2172,7 +2172,7 @@ export default function App() {
         </div>
 
         {/* Center Album Cover */}
-        <div className="flex flex-col items-center gap-6 shrink-0">
+        <div className="flex flex-col items-center gap-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={`cover-${currentSong.id}`}
@@ -2182,7 +2182,7 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
             >
-              <div className="w-[420px] h-[420px] rounded-3xl overflow-hidden shadow-2xl bg-white/10 backdrop-blur-sm p-3">
+              <div className="w-96 h-96 rounded-3xl overflow-hidden shadow-2xl bg-white/10 backdrop-blur-sm p-3">
                 <div className="w-full h-full rounded-2xl overflow-hidden">
                   <img 
                     src={currentSong.cover} 
@@ -2205,13 +2205,13 @@ export default function App() {
               transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
             >
               <h1 
-                className="text-2xl tracking-wider mb-2"
+                className="text-xl tracking-wider mb-1"
                 style={{ color: currentSong.colors.text, opacity: 0.7 }}
               >
                 {currentSong.title}
               </h1>
               <p 
-                className="text-sm tracking-wide"
+                className="text-xs tracking-wide"
                 style={{ color: currentSong.colors.text, opacity: 0.5 }}
               >
                 {currentSong.artist}
@@ -2221,9 +2221,9 @@ export default function App() {
         </div>
 
         {/* Right Panel - Up Next */}
-        <div className="w-80 shrink-0 flex flex-col items-start gap-3">
+        <div className="w-64 flex flex-col items-start gap-3">
           <div 
-            className="text-sm tracking-wider mb-2"
+            className="text-xs tracking-wider mb-2"
             style={{ color: currentSong.colors.text, opacity: 0.5 }}
           >
             UP NEXT &gt;&gt;
@@ -2237,13 +2237,13 @@ export default function App() {
               transition={{ duration: 0.5 }}
             >
               <h3 
-                className="text-xl tracking-wide"
+                className="text-lg tracking-wide"
                 style={{ color: currentSong.colors.text, opacity: 0.6 }}
               >
                 {nextSong.title}
               </h3>
               <p 
-                className="text-sm tracking-wide mt-1"
+                className="text-xs tracking-wide mt-1"
                 style={{ color: currentSong.colors.text, opacity: 0.4 }}
               >
                 {nextSong.artist}
