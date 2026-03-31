@@ -298,6 +298,58 @@ export default function App() {
     setPlaylists(playlists.filter(playlist => playlist.id !== playlistId));
   };
 
+  const handleDeleteSong = (songIndex: number) => {
+    const songId = songs[songIndex].id;
+    
+    // Remove song from all playlists
+    setPlaylists(playlists.map(playlist => ({
+      ...playlist,
+      songIds: playlist.songIds.filter(id => id !== songId)
+    })));
+    
+    // Remove from queue
+    setQueue(queue.filter(idx => idx !== songIndex).map(idx => idx > songIndex ? idx - 1 : idx));
+    
+    // Remove the song from songs array
+    const newSongs = songs.filter((_, idx) => idx !== songIndex);
+    setSongs(newSongs);
+    
+    // If no songs left, reset everything
+    if (newSongs.length === 0) {
+      setCurrentSongIndex(0);
+      setIsPlaying(false);
+      setActivePlaylistId(null);
+      setQueue([]);
+      setPreQueuePlaylistId(null);
+      setPreQueueSongIndex(null);
+      // Close any open modals
+      setIsSearchOpen(false);
+      setIsAllSongsOpen(false);
+      return;
+    }
+    
+    // Adjust current song index if needed
+    if (currentSongIndex === songIndex) {
+      // If deleting current song, move to next song (or previous if last)
+      setCurrentSongIndex(songIndex >= newSongs.length ? 0 : songIndex);
+      setIsPlaying(false);
+    } else if (currentSongIndex > songIndex) {
+      // Adjust index if deleted song was before current
+      setCurrentSongIndex(currentSongIndex - 1);
+    }
+    
+    // Exit active playlist if it becomes empty
+    if (activePlaylistId !== null) {
+      const activePlaylist = playlists.find(p => p.id === activePlaylistId);
+      if (activePlaylist && activePlaylist.songIds.includes(songId)) {
+        const newSongIds = activePlaylist.songIds.filter(id => id !== songId);
+        if (newSongIds.length === 0) {
+          setActivePlaylistId(null);
+        }
+      }
+    }
+  };
+
   const handleAddSpecificSongToPlaylist = (songIndex: number, playlistId: number) => {
     const songId = songs[songIndex].id;
     setPlaylists(playlists.map(playlist => {
@@ -713,13 +765,14 @@ export default function App() {
         </div>
 
         {/* YouTube Music Search Modal */}
-        {isYouTubeMusicSearchOpen && (
-          <YouTubeMusicSearch
-            onClose={() => setIsYouTubeMusicSearchOpen(false)}
-            onSelectSong={handleAddYouTubeSong}
-            existingSongs={songs}
-          />
-        )}
+        <AnimatePresence>
+          {isYouTubeMusicSearchOpen && (
+            <YouTubeMusicSearch
+              onClose={handleYouTubeMusicClose}
+              onAddSong={handleAddYouTubeSong}
+            />
+          )}
+        </AnimatePresence>
       </div>
     );
   }
@@ -1000,6 +1053,17 @@ export default function App() {
                                     </p>
                                   </div>
                                   <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteSong(songIndex);
+                                      }}
+                                      className="p-2 rounded-full transition-all hover:scale-105"
+                                      style={{ background: 'rgba(239, 68, 68, 0.6)' }}
+                                      title="Delete Song"
+                                    >
+                                      <Trash2 size={16} color="white" />
+                                    </button>
                                     <button
                                       onClick={() => handleOpenPlaylistSelector(songIndex)}
                                       className="p-2 rounded-full transition-all hover:scale-105"
@@ -1311,6 +1375,17 @@ export default function App() {
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteSong(idx);
+                                }}
+                                className="p-2 rounded-full transition-all hover:scale-105"
+                                style={{ background: 'rgba(239, 68, 68, 0.6)' }}
+                                title="Delete Song"
+                              >
+                                <Trash2 size={16} color="white" />
+                              </button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
