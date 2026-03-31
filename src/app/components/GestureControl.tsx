@@ -8,12 +8,13 @@ interface GestureControlProps {
   onPause: () => void;
   onNext: () => void;
   onPrevious: () => void;
+  onVoiceControl?: () => void;
   isPlaying: boolean;
 }
 
-type GestureType = 'thumbs_up' | 'open_palm' | 'pointing_up' | 'closed_fist' | null;
+type GestureType = 'thumbs_up' | 'open_palm' | 'pointing_up' | 'closed_fist' | 'victory_sign' | null;
 
-export function GestureControl({ onPlay, onPause, onNext, onPrevious, isPlaying }: GestureControlProps) {
+export function GestureControl({ onPlay, onPause, onNext, onPrevious, onVoiceControl, isPlaying }: GestureControlProps) {
   const [isEnabled, setIsEnabled] = useState(false);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState(false);
@@ -364,6 +365,12 @@ export function GestureControl({ onPlay, onPause, onNext, onPrevious, isPlaying 
       return 'open_palm';
     }
     
+    // 5. VICTORY SIGN: Index and middle fingers extended, all others curled
+    if (indexExtended && middleExtended && !ringExtended && !pinkyExtended && !thumbVerticallyUp) {
+      console.log('✌️ DETECTED: VICTORY SIGN - Voice Control', fingerStatus);
+      return 'victory_sign';
+    }
+    
     // Log when no clear gesture is detected
     if (extendedCount > 0 || thumbVerticallyUp) {
       console.log('❓ No clear gesture detected:', fingerStatus, `Extended count: ${extendedCount}`);
@@ -495,6 +502,13 @@ export function GestureControl({ onPlay, onPause, onNext, onPrevious, isPlaying 
                 gestureName = '✊ Previous Song';
                 actionTaken = true;
                 break;
+              case 'victory_sign':
+                if (onVoiceControl) {
+                  onVoiceControl();
+                  gestureName = '✌️ Voice Control';
+                  actionTaken = true;
+                }
+                break;
             }
 
             if (actionTaken) {
@@ -514,7 +528,7 @@ export function GestureControl({ onPlay, onPause, onNext, onPrevious, isPlaying 
     }
 
     animationFrameRef.current = requestAnimationFrame(processFrame);
-  }, [isEnabled, permissionGranted, onPlay, onPause, onNext, onPrevious, isPlaying, analyzeHandLandmarks, drawHandLandmarks]);
+  }, [isEnabled, permissionGranted, onPlay, onPause, onNext, onPrevious, onVoiceControl, isPlaying, analyzeHandLandmarks, drawHandLandmarks]);
 
   // Start/stop gesture detection
   useEffect(() => {
@@ -775,6 +789,10 @@ export function GestureControl({ onPlay, onPause, onNext, onPrevious, isPlaying 
                   <div className="flex flex-col items-center gap-1 p-2 bg-gray-900/50 rounded-lg">
                     <span className="text-2xl">✊</span>
                     <span className="text-xs text-center">Fist<br/>→ Previous</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1 p-2 bg-gray-900/50 rounded-lg">
+                    <span className="text-2xl">✌️</span>
+                    <span className="text-xs text-center">Victory Sign<br/>→ Voice Control</span>
                   </div>
                 </div>
               </div>

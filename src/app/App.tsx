@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Plus, X, Trash2, ChevronLeft, ChevronRight, ListPlus } from 'lucide-react';
 import { PlaylistView } from './components/PlaylistView';
 import { GestureControl } from './components/GestureControl';
+import { VoiceControl } from './components/VoiceControl';
 import { YouTubeMusicSearch } from './components/YouTubeMusicSearch';
 import { YouTubePlayer, YouTubePlayerRef } from './components/YouTubePlayer';
 import { Song, Playlist, YouTubeSong } from './types';
@@ -93,6 +94,7 @@ export default function App() {
   const [viewingPlaylistId, setViewingPlaylistId] = useState<number | null>(null);
   const [isAddSongOpen, setIsAddSongOpen] = useState(false);
   const [isYouTubeMusicSearchOpen, setIsYouTubeMusicSearchOpen] = useState(false);
+  const [isVoiceControlOpen, setIsVoiceControlOpen] = useState(false);
   const [songToAddToPlaylist, setSongToAddToPlaylist] = useState<number | null>(null);
   const [showPlaylistSelector, setShowPlaylistSelector] = useState(false);
   const [newSong, setNewSong] = useState({
@@ -2384,7 +2386,22 @@ export default function App() {
         onPause={handlePlayPause}
         onNext={handleNext}
         onPrevious={handlePrevious}
+        onVoiceControl={() => setIsVoiceControlOpen(true)}
         isPlaying={isPlaying}
+      />
+
+      {/* Voice Control */}
+      <VoiceControl
+        onPlay={handlePlayPause}
+        onPause={handlePlayPause}
+        onNext={handleNext}
+        onPrevious={handlePrevious}
+        onPlaySong={(songIndex) => {
+          setCurrentSongIndex(songIndex);
+          setIsPlaying(true);
+        }}
+        isPlaying={isPlaying}
+        songs={songs}
       />
     </div>
   );
