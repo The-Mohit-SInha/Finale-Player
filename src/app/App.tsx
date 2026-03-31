@@ -440,7 +440,7 @@ export default function App() {
         circles: generateRandomCircles()
       };
 
-      setSongs([...songs, createdSong]);
+      setSongs(prevSongs => [...prevSongs, createdSong]);
       handleAddSongClose();
     }
   };
@@ -455,6 +455,14 @@ export default function App() {
 
   const handleAddYouTubeSong = async (youtubeSong: YouTubeSong) => {
     try {
+      // Check if song already exists
+      const songExists = songs.some(song => song.youtubeId === youtubeSong.videoId);
+      if (songExists) {
+        console.log('Song already exists in library:', youtubeSong.title);
+        alert('This song is already in your library!');
+        return;
+      }
+
       // Fetch color palette for the song
       const colorResponse = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-6ed35f1d/youtube/extract-colors`,
@@ -515,7 +523,11 @@ export default function App() {
         circles: generateRandomCircles()
       };
 
-      setSongs([...songs, newSong]);
+      setSongs(prevSongs => {
+        console.log('Adding song to library. Current songs:', prevSongs.length, 'New total will be:', prevSongs.length + 1);
+        console.log('New song:', newSong.title, 'by', newSong.artist);
+        return [...prevSongs, newSong];
+      });
       handleYouTubeMusicClose();
     } catch (error) {
       console.error('Error adding YouTube song:', error);
@@ -770,6 +782,7 @@ export default function App() {
             <YouTubeMusicSearch
               onClose={handleYouTubeMusicClose}
               onAddSong={handleAddYouTubeSong}
+              existingSongs={songs}
             />
           )}
         </AnimatePresence>
@@ -1946,6 +1959,7 @@ export default function App() {
           <YouTubeMusicSearch
             onClose={handleYouTubeMusicClose}
             onAddSong={handleAddYouTubeSong}
+            existingSongs={songs}
           />
         )}
       </AnimatePresence>

@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { Search, X, Music, Loader2, Plus } from 'lucide-react';
+import { Search, X, Music, Loader2, Plus, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { YouTubeSong } from '../types';
+import { YouTubeSong, Song } from '../types';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
 
 interface YouTubeMusicSearchProps {
   onClose: () => void;
   onAddSong: (song: YouTubeSong) => void;
+  existingSongs: Song[];
 }
 
-export function YouTubeMusicSearch({ onClose, onAddSong }: YouTubeMusicSearchProps) {
+export function YouTubeMusicSearch({ onClose, onAddSong, existingSongs }: YouTubeMusicSearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<YouTubeSong[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -189,51 +190,66 @@ export function YouTubeMusicSearch({ onClose, onAddSong }: YouTubeMusicSearchPro
 
           <AnimatePresence>
             <div className="space-y-3">
-              {results.map((song) => (
-                <motion.div
-                  key={song.videoId}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 transition-colors group"
-                >
-                  {/* Thumbnail */}
-                  <img
-                    src={song.thumbnail}
-                    alt={song.title}
-                    className="w-20 h-20 rounded-lg object-cover shadow-md"
-                  />
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-800 truncate">
-                      {song.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 truncate">
-                      {song.channelTitle}
-                    </p>
-                  </div>
-
-                  {/* Add Button */}
-                  <button
-                    onClick={() => handleAddSong(song)}
-                    disabled={selectedSong === song.videoId}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 opacity-0 group-hover:opacity-100"
+              {results.map((song) => {
+                const isAlreadyAdded = existingSongs.some(s => s.youtubeId === song.videoId);
+                return (
+                  <motion.div
+                    key={song.videoId}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 transition-colors group"
                   >
-                    {selectedSong === song.videoId ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Adding...
-                      </>
+                    {/* Thumbnail */}
+                    <img
+                      src={song.thumbnail}
+                      alt={song.title}
+                      className="w-20 h-20 rounded-lg object-cover shadow-md"
+                    />
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-800 truncate">
+                        {song.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 truncate">
+                        {song.channelTitle}
+                      </p>
+                      {isAlreadyAdded && (
+                        <p className="text-xs text-green-600 font-medium mt-1">
+                          ✓ Already in library
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Add Button */}
+                    {isAlreadyAdded ? (
+                      <div className="px-4 py-2 bg-green-100 text-green-700 rounded-lg flex items-center gap-2 opacity-100">
+                        <Check className="w-4 h-4" />
+                        Added
+                      </div>
                     ) : (
-                      <>
-                        <Plus className="w-4 h-4" />
-                        Add
-                      </>
+                      <button
+                        onClick={() => handleAddSong(song)}
+                        disabled={selectedSong === song.videoId}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 opacity-0 group-hover:opacity-100"
+                      >
+                        {selectedSong === song.videoId ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Adding...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4" />
+                            Add
+                          </>
+                        )}
+                      </button>
                     )}
-                  </button>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           </AnimatePresence>
         </div>
