@@ -60,7 +60,7 @@ export const savePlaylists = (playlists: Playlist[]): void => {
     // Convert Date objects to ISO strings
     const serializedPlaylists = playlists.map(playlist => ({
       ...playlist,
-      createdAt: playlist.createdAt.toISOString(),
+      createdAt: playlist.createdAt?.toISOString(),
     }));
     localStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(serializedPlaylists));
   } catch (error) {
@@ -77,7 +77,7 @@ export const loadPlaylists = (): Playlist[] | null => {
       // Convert ISO strings back to Date objects
       return parsed.map((playlist: any) => ({
         ...playlist,
-        createdAt: new Date(playlist.createdAt),
+        createdAt: playlist.createdAt ? new Date(playlist.createdAt) : undefined,
       }));
     }
     return null;
