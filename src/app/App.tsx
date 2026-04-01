@@ -631,6 +631,14 @@ export default function App() {
     setIsPlaying(!isPlaying);
   };
 
+  const handlePlay = () => {
+    setIsPlaying(true);
+  };
+
+  const handlePause = () => {
+    setIsPlaying(false);
+  };
+
   const handleNext = () => {
     // Turn off repeat when manually changing songs
     setIsRepeatOn(false);
@@ -2382,8 +2390,8 @@ export default function App() {
 
       {/* Gesture Control */}
       <GestureControl
-        onPlay={handlePlayPause}
-        onPause={handlePlayPause}
+        onPlay={handlePlay}
+        onPause={handlePause}
         onNext={handleNext}
         onPrevious={handlePrevious}
         onVoiceControl={() => setIsVoiceControlOpen(true)}
@@ -2392,8 +2400,8 @@ export default function App() {
 
       {/* Voice Control */}
       <VoiceControl
-        onPlay={handlePlayPause}
-        onPause={handlePlayPause}
+        onPlay={handlePlay}
+        onPause={handlePause}
         onNext={handleNext}
         onPrevious={handlePrevious}
         onPlaySong={(songIndex) => {

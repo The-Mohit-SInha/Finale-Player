@@ -39,6 +39,7 @@ export function VoiceControl({
   const recognitionRef = useRef<any>(null);
   const feedbackTimeoutRef = useRef<number | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const processVoiceCommandRef = useRef<(command: string) => void>(() => {});
 
   // Check if browser supports Web Speech API
   useEffect(() => {
@@ -82,7 +83,7 @@ export function VoiceControl({
       // Only process final results
       if (event.results[current].isFinal) {
         console.log('Processing final transcript:', transcript);
-        processVoiceCommand(transcript);
+        processVoiceCommandRef.current(transcript);
       }
     };
 
@@ -134,7 +135,14 @@ export function VoiceControl({
   }, [isListening, permissionGranted]);
 
   const processVoiceCommand = useCallback((command: string) => {
-    console.log('Processing command:', command);
+    console.log('🎯 Processing command:', command);
+    console.log('🎯 Current isPlaying state:', isPlaying);
+    console.log('🎯 Available callbacks:', { 
+      hasOnPlay: !!onPlay, 
+      hasOnPause: !!onPause, 
+      hasOnNext: !!onNext, 
+      hasOnPrevious: !!onPrevious 
+    });
     
     let matched = false;
 
@@ -251,15 +259,15 @@ export function VoiceControl({
 
     // PRIORITY 2: Pause/Stop (check before play to avoid conflicts)
     if (!matched && hasPause) {
-      if (isPlaying) {
-        onPause();
-        showFeedback('⏸️ Paused');
-        matched = true;
-      }
+      console.log('✅ Executing PAUSE command');
+      onPause();
+      showFeedback('⏸️ Paused');
+      matched = true;
     }
 
     // PRIORITY 3: Next song
     if (!matched && hasNext) {
+      console.log('✅ Executing NEXT command');
       onNext();
       showFeedback('⏭️ Next song');
       matched = true;
@@ -267,6 +275,7 @@ export function VoiceControl({
 
     // PRIORITY 4: Previous song
     if (!matched && hasPrevious) {
+      console.log('✅ Executing PREVIOUS command');
       onPrevious();
       showFeedback('⏮️ Previous song');
       matched = true;
@@ -274,11 +283,10 @@ export function VoiceControl({
 
     // PRIORITY 5: Simple play/resume (only if no specific song mentioned)
     if (!matched && hasPlay && !hasSong) {
-      if (!isPlaying) {
-        onPlay();
-        showFeedback('▶️ Playing');
-        matched = true;
-      }
+      console.log('✅ Executing PLAY command');
+      onPlay();
+      showFeedback('▶️ Playing');
+      matched = true;
     }
 
     // No command recognized
@@ -287,6 +295,8 @@ export function VoiceControl({
       console.log('Unrecognized command. Keywords detected:', { hasPlay, hasPause, hasNext, hasPrevious, hasSong });
     }
   }, [isPlaying, onPlay, onPause, onNext, onPrevious, onPlaySong, songs]);
+
+  processVoiceCommandRef.current = processVoiceCommand;
 
   const showFeedback = useCallback((message: string) => {
     setFeedback(message);

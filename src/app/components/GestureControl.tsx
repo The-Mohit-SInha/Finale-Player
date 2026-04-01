@@ -81,9 +81,9 @@ export function GestureControl({ onPlay, onPause, onNext, onPrevious, onVoiceCon
         },
         runningMode: 'VIDEO',
         numHands: 1,
-        minHandDetectionConfidence: 0.3,
-        minHandPresenceConfidence: 0.3,
-        minTrackingConfidence: 0.3
+        minHandDetectionConfidence: 0.5,
+        minHandPresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
       });
       
       handLandmarkerRef.current = handLandmarker;
@@ -463,6 +463,7 @@ export function GestureControl({ onPlay, onPause, onNext, onPrevious, onVoiceCon
       
       // Draw hand landmarks if detected
       if (result.landmarks && result.landmarks.length > 0) {
+        setDebugInfo('Hand detected!');
         drawHandLandmarks(ctx, result.landmarks[0], canvas.width, canvas.height);
         
         // Analyze gesture
