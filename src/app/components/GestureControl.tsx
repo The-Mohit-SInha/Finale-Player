@@ -606,40 +606,53 @@ export function GestureControl({ onPlay, onPause, onNext, onPrevious, onVoiceCon
             <div className="relative overflow-hidden rounded-xl shadow-2xl border-2 border-green-500/50">
               {/* Video Display (mirrors the hidden video) */}
               <div className="w-48 h-36 bg-gray-900 relative overflow-hidden">
-                <video
-                  className="w-full h-full object-cover"
-                  playsInline
-                  muted
-                  autoPlay
-                  style={{ transform: 'scaleX(-1)' }}
-                  ref={(el) => {
-                    if (el && videoRef.current && videoRef.current.srcObject) {
-                      el.srcObject = videoRef.current.srcObject;
-                    }
-                  }}
-                />
-                <canvas
-                  className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                  width={640}
-                  height={480}
-                  style={{ transform: 'scaleX(-1)' }}
-                  ref={(el) => {
-                    if (el && canvasRef.current) {
-                      const ctx = el.getContext('2d');
-                      const srcCtx = canvasRef.current.getContext('2d');
-                      if (ctx && srcCtx) {
-                        // Copy canvas content
-                        const copy = () => {
-                          ctx.drawImage(canvasRef.current!, 0, 0);
-                          if (permissionGranted && isEnabled) {
-                            requestAnimationFrame(copy);
+                {showVideoFeed && (
+                  <>
+                    <video
+                      className="w-full h-full object-cover"
+                      playsInline
+                      muted
+                      autoPlay
+                      style={{ transform: 'scaleX(-1)' }}
+                      ref={(el) => {
+                        if (el && videoRef.current && videoRef.current.srcObject) {
+                          el.srcObject = videoRef.current.srcObject;
+                        }
+                      }}
+                    />
+                    <canvas
+                      className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                      width={640}
+                      height={480}
+                      style={{ transform: 'scaleX(-1)' }}
+                      ref={(el) => {
+                        if (el && canvasRef.current) {
+                          const ctx = el.getContext('2d');
+                          const srcCtx = canvasRef.current.getContext('2d');
+                          if (ctx && srcCtx) {
+                            // Copy canvas content
+                            const copy = () => {
+                              ctx.drawImage(canvasRef.current!, 0, 0);
+                              if (permissionGranted && isEnabled && showVideoFeed) {
+                                requestAnimationFrame(copy);
+                              }
+                            };
+                            copy();
                           }
-                        };
-                        copy();
-                      }
-                    }
-                  }}
-                />
+                        }
+                      }}
+                    />
+                  </>
+                )}
+                {!showVideoFeed && (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <VideoOff className="size-8 text-gray-600 mx-auto mb-2" />
+                      <p className="text-xs text-gray-500 font-medium">Video Hidden</p>
+                      <p className="text-xs text-gray-600 mt-1">Still Tracking</p>
+                    </div>
+                  </div>
+                )}
               </div>
               
               {/* Status Indicator */}

@@ -2402,6 +2402,8 @@ export default function App() {
         }}
         isPlaying={isPlaying}
         songs={songs}
+        externalTrigger={isVoiceControlOpen}
+        onExternalTriggerComplete={() => setIsVoiceControlOpen(false)}
       />
     </div>
   );

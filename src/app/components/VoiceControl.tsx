@@ -11,6 +11,8 @@ interface VoiceControlProps {
   onPlaySong: (songIndex: number) => void;
   isPlaying: boolean;
   songs: Song[];
+  externalTrigger?: boolean;
+  onExternalTriggerComplete?: () => void;
 }
 
 export function VoiceControl({ 
@@ -20,7 +22,9 @@ export function VoiceControl({
   onPrevious, 
   onPlaySong,
   isPlaying, 
-  songs 
+  songs,
+  externalTrigger,
+  onExternalTriggerComplete
 }: VoiceControlProps) {
   const [isListening, setIsListening] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -425,6 +429,35 @@ export function VoiceControl({
       }
     };
   }, []);
+
+  // Handle external trigger (from hand gesture)
+  useEffect(() => {
+    if (externalTrigger) {
+      console.log('✌️ External trigger detected - Opening voice control with auto-start');
+      
+      if (!isSupported) {
+        setShowModal(true);
+        onExternalTriggerComplete?.();
+        return;
+      }
+
+      if (!permissionGranted) {
+        // Show permission modal
+        setShowPermissionModal(true);
+      } else {
+        // Already have permission, open modal and start listening
+        setShowModal(true);
+        setTimeout(() => {
+          if (!isListening) {
+            startListening();
+          }
+        }, 300);
+      }
+      
+      // Signal that we've handled the trigger
+      onExternalTriggerComplete?.();
+    }
+  }, [externalTrigger, permissionGranted, isSupported, isListening]);
 
   return (
     <>
