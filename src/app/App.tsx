@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Plus, X, Trash2, ChevronLeft, ChevronRight, ListPlus } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Plus, X, Trash2, ChevronLeft, ChevronRight, ListPlus, HelpCircle } from 'lucide-react';
 import { PlaylistView } from './components/PlaylistView';
 import { GestureControl } from './components/GestureControl';
 import { VoiceControl } from './components/VoiceControl';
 import { YouTubeMusicSearch } from './components/YouTubeMusicSearch';
 import { YouTubePlayer, YouTubePlayerRef } from './components/YouTubePlayer';
+import { HelpModal } from './components/HelpModal';
 import { Song, Playlist, YouTubeSong } from './types';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
 import { 
@@ -95,6 +96,7 @@ export default function App() {
   const [isAddSongOpen, setIsAddSongOpen] = useState(false);
   const [isYouTubeMusicSearchOpen, setIsYouTubeMusicSearchOpen] = useState(false);
   const [isVoiceControlOpen, setIsVoiceControlOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [songToAddToPlaylist, setSongToAddToPlaylist] = useState<number | null>(null);
   const [showPlaylistSelector, setShowPlaylistSelector] = useState(false);
   const [newSong, setNewSong] = useState({
@@ -2412,6 +2414,23 @@ export default function App() {
         songs={songs}
         externalTrigger={isVoiceControlOpen}
         onExternalTriggerComplete={() => setIsVoiceControlOpen(false)}
+      />
+
+      {/* Help Button */}
+      <motion.button
+        onClick={() => setIsHelpOpen(true)}
+        className="fixed top-6 left-6 z-40 p-4 rounded-full shadow-2xl bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        title="Help & Guide"
+      >
+        <HelpCircle className="w-6 h-6 text-white" />
+      </motion.button>
+
+      {/* Help Modal */}
+      <HelpModal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
       />
     </div>
   );
