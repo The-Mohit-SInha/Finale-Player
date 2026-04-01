@@ -552,29 +552,16 @@ export function VoiceControl({
               <div className="bg-gray-800/50 rounded-xl p-4 mb-6 border border-gray-700">
                 <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
                   <span className="size-2 bg-purple-400 rounded-full"></span>
-                  Available Voice Commands:
+                  How to Search:
                 </h3>
-                <div className="space-y-2 text-sm text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <span className="text-purple-400">▶️</span>
-                    <span>"Play" / "Resume"</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-purple-400">⏸️</span>
-                    <span>"Pause" / "Stop"</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-purple-400">⏭️</span>
-                    <span>"Next" / "Skip"</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-purple-400">⏮️</span>
-                    <span>"Previous" / "Back"</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-purple-400">🎵</span>
-                    <span>"Play song [name]"</span>
-                  </div>
+                <div className="flex items-center justify-center gap-2 p-3 bg-gray-900/50 rounded-lg">
+                  <span className="text-purple-400 text-2xl">🎵</span>
+                  <span className="text-base font-semibold text-gray-200">Play &lt;song name&gt;</span>
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-700">
+                  <p className="text-xs text-purple-400 font-medium mb-2">✨ Examples:</p>
+                  <p className="text-xs text-gray-400 italic">\"Play Blinding Lights\"</p>
+                  <p className="text-xs text-gray-400 italic">\"Play Shape of You\"</p>
                 </div>
               </div>
 
@@ -757,38 +744,6 @@ export function VoiceControl({
                   <p className="text-lg font-semibold text-purple-800">{feedback}</p>
                 </motion.div>
               )}
-
-              {/* Available Commands */}
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5">
-                <h3 className="font-semibold text-gray-800 mb-3 text-sm">Available Commands:</h3>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <div className="flex items-center gap-2">
-                    <span className="text-purple-600">▶️</span>
-                    <span>"Play", "Start", "Resume"</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-purple-600">⏸️</span>
-                    <span>"Pause", "Stop", "Wait"</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-purple-600">⏭️</span>
-                    <span>"Next", "Skip", "Forward"</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-purple-600">⏮️</span>
-                    <span>"Previous", "Back", "Rewind"</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-purple-600">🎵</span>
-                    <span>"Play [song name]" - Smart matching!</span>
-                  </div>
-                </div>
-                <div className="mt-3 pt-3 border-t border-purple-200">
-                  <p className="text-xs text-purple-700 font-medium mb-1">✨ Natural language supported:</p>
-                  <p className="text-xs text-gray-600 italic">"Can you play the next song please?"</p>
-                  <p className="text-xs text-gray-600 italic">"Start playing Faded"</p>
-                </div>
-              </div>
 
               {/* Status indicator */}
               {permissionGranted && (
