@@ -2419,12 +2419,16 @@ export default function App() {
       {/* Help Button */}
       <motion.button
         onClick={() => setIsHelpOpen(true)}
-        className="fixed top-6 left-6 z-40 p-4 rounded-full shadow-2xl bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
+        className="fixed top-6 left-6 z-40 p-4 rounded-full shadow-2xl transition-all duration-1000 backdrop-blur-md"
+        style={{
+          background: `linear-gradient(135deg, ${currentSong.colors.primary}, ${currentSong.colors.secondary})`,
+          boxShadow: `0 8px 32px ${currentSong.colors.primary}40`
+        }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         title="Help & Guide"
       >
-        <HelpCircle className="w-6 h-6 text-white" />
+        <HelpCircle className="w-6 h-6 text-white drop-shadow-lg" />
       </motion.button>
 
       {/* Help Modal */}
