@@ -246,50 +246,41 @@ export function VoiceControl({
 
       // If we have a meaningful query after removing keywords
       if (songQuery.length > 1) {
-        console.log('Searching for song:', songQuery);
+        console.log('🔍 Searching for song:', songQuery);
+        console.log('📚 Available songs in library:', songs.map(s => s.title).join(', '));
         
-        // Find best matching song using multiple strategies
+        // Find best matching song using STRICT strategies
         let matchedSong = null;
         let matchScore = 0;
 
         songs.forEach(song => {
           const titleLower = song.title.toLowerCase();
-          const artistLower = song.artist.toLowerCase();
           let score = 0;
 
           // Strategy 1: Exact title match (highest priority)
           if (titleLower === songQuery) {
             score = 100;
+            console.log(`  ✅ EXACT MATCH: "${song.title}" - Score: ${score}`);
           }
-          // Strategy 2: Title starts with query
+          // Strategy 2: Title starts with query (very close match)
           else if (titleLower.startsWith(songQuery)) {
-            score = 90;
+            score = 95;
+            console.log(`  ✅ STARTS WITH: "${song.title}" - Score: ${score}`);
           }
-          // Strategy 3: Title contains query as whole phrase
+          // Strategy 3: Query starts with title (reverse match - e.g., "Faded" matches "play faded remix")
+          else if (songQuery.startsWith(titleLower)) {
+            score = 90;
+            console.log(`  ✅ QUERY STARTS WITH TITLE: "${song.title}" - Score: ${score}`);
+          }
+          // Strategy 4: Title contains query as complete substring
           else if (titleLower.includes(songQuery)) {
             score = 85;
+            console.log(`  ⚠️  CONTAINS: "${song.title}" - Score: ${score}`);
           }
-          // Strategy 4: All query words present in title (in order)
+          // Everything else gets score 0 - will go to YouTube
           else {
-            const queryWords = songQuery.split(' ').filter(w => w.length > 2);
-            const titleWords = titleLower.split(' ');
-            
-            // Count how many query words match title words
-            const titleMatches = queryWords.filter(qw => 
-              titleWords.some(tw => tw.includes(qw) || qw.includes(tw))
-            ).length;
-            
-            // Only consider it a match if ALL query words are in the title
-            if (titleMatches === queryWords.length && queryWords.length > 0) {
-              score = 75;
-            }
-            // Partial match - at least 60% of words match
-            else if (titleMatches / queryWords.length >= 0.6 && queryWords.length > 0) {
-              score = 65;
-            }
+            console.log(`  ❌ NO MATCH: "${song.title}" - Score: 0`);
           }
-
-          console.log(`Song: "${song.title}" - Score: ${score} (query: "${songQuery}")`);
 
           // Keep track of best match
           if (score > matchScore) {
@@ -298,20 +289,21 @@ export function VoiceControl({
           }
         });
 
-        console.log(`Best match: "${matchedSong?.title || 'none'}" with score: ${matchScore}`);
+        console.log(`\n🎯 FINAL RESULT: Best match = "${matchedSong?.title || 'none'}" with score: ${matchScore}`);
+        console.log(`🎯 Threshold = 85 (will ${matchScore >= 85 ? 'PLAY LOCALLY' : 'SEARCH YOUTUBE'})\n`);
 
-        // Only accept matches with score >= 70 (strict confidence threshold)
-        if (matchedSong && matchScore >= 70) {
+        // Only accept matches with score >= 85 (VERY strict - only exact or substring matches)
+        if (matchedSong && matchScore >= 85) {
           const songIndex = songs.findIndex(s => s.id === matchedSong!.id);
           if (songIndex !== -1) {
             onPlaySong(songIndex);
             showFeedback(`🎵 Playing: ${matchedSong.title} by ${matchedSong.artist}`);
-            console.log(`✅ Matched song with score ${matchScore}:`, matchedSong.title);
+            console.log(`✅✅✅ PLAYING LOCAL SONG with score ${matchScore}:`, matchedSong.title);
             matched = true;
           }
-        } else if (songQuery.length > 1) {
+        } else {
           // Song not found locally - search YouTube Music
-          console.log(`No local match found (best score: ${matchScore}). Searching YouTube Music for: ${songQuery}`);
+          console.log(`❌ No local match found (best score: ${matchScore} < 85). Searching YouTube Music for: "${songQuery}"`);
           showFeedback(`🔍 Searching YouTube for: "${songQuery}"...`);
           setIsSearching(true);
           
