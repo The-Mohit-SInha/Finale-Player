@@ -137,7 +137,7 @@ export function VoiceControl({
     console.log('Speech recognition initialized');
   }, [isListening, permissionGranted]);
 
-  // Search YouTube Music and add song automatically
+  // Search YouTube Music and add song automatically (or play if already exists)
   const searchAndAddYouTubeSong = useCallback(async (query: string) => {
     try {
       console.log('🔍 Searching YouTube Music for:', query);
@@ -173,35 +173,54 @@ export function VoiceControl({
 
       // Get the first result (most relevant)
       const firstResult = data.items[0];
+      const videoId = firstResult.id.videoId;
       const youtubeSong: YouTubeSong = {
-        videoId: firstResult.id.videoId,
+        videoId: videoId,
         title: firstResult.snippet.title,
         channelTitle: firstResult.snippet.channelTitle,
         thumbnail: firstResult.snippet.thumbnails.high?.url || firstResult.snippet.thumbnails.default.url,
         description: firstResult.snippet.description
       };
 
-      console.log('Selected song:', youtubeSong.title, 'by', youtubeSong.channelTitle);
-      showFeedback(`✅ Found: ${youtubeSong.title}`);
+      console.log('🎯 Top YouTube result:', youtubeSong.title, 'by', youtubeSong.channelTitle);
+      console.log('🎯 Video ID:', videoId);
       
-      // Add the song to library
-      await onAddYouTubeSong(youtubeSong);
+      // Check if this song already exists in library by videoId
+      const existingSongIndex = songs.findIndex(song => song.youtubeVideoId === videoId);
       
-      // After adding, find and play it
-      setTimeout(() => {
-        // Songs state will be updated, so we need to wait a moment
-        const newSongIndex = songs.length; // It will be added at the end
-        onPlaySong(newSongIndex);
-        showFeedback(`🎵 Now playing: ${youtubeSong.title}`);
-        setIsSearching(false);
-      }, 500);
+      if (existingSongIndex !== -1) {
+        // Song already exists - just play it
+        const existingSong = songs[existingSongIndex];
+        console.log('✅ Song already in library! Playing existing song:', existingSong.title);
+        showFeedback(`✅ Found in library: ${existingSong.title}`);
+        onPlaySong(existingSongIndex);
+        setTimeout(() => {
+          showFeedback(`🎵 Now playing: ${existingSong.title}`);
+          setIsSearching(false);
+        }, 1000);
+      } else {
+        // Song doesn't exist - add it and play
+        console.log('📥 Song not in library. Adding:', youtubeSong.title);
+        showFeedback(`📥 Adding: ${youtubeSong.title}...`);
+        
+        await onAddYouTubeSong(youtubeSong);
+        
+        // After adding, find and play it
+        setTimeout(() => {
+          // Songs state will be updated, so we need to wait a moment
+          const newSongIndex = songs.length; // It will be added at the end
+          onPlaySong(newSongIndex);
+          showFeedback(`🎵 Now playing: ${youtubeSong.title}`);
+          setIsSearching(false);
+        }, 500);
+      }
 
     } catch (error) {
       console.error('Error searching YouTube:', error);
       showFeedback(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsSearching(false);
     }
-  }, [onAddYouTubeSong, onPlaySong, songs.length]);
+  }, [onAddYouTubeSong, onPlaySong, songs]);
 
   const processVoiceCommand = useCallback((command: string) => {
     console.log('🎯 Processing command:', command);
@@ -246,71 +265,16 @@ export function VoiceControl({
 
       // If we have a meaningful query after removing keywords
       if (songQuery.length > 1) {
-        console.log('🔍 Searching for song:', songQuery);
-        console.log('📚 Available songs in library:', songs.map(s => s.title).join(', '));
+        console.log('🎵 Play song command detected! Query:', songQuery);
+        console.log('🔍 ALWAYS searching YouTube first for best results...');
         
-        // Find best matching song using STRICT strategies
-        let matchedSong = null;
-        let matchScore = 0;
-
-        songs.forEach(song => {
-          const titleLower = song.title.toLowerCase();
-          let score = 0;
-
-          // Strategy 1: Exact title match (highest priority)
-          if (titleLower === songQuery) {
-            score = 100;
-            console.log(`  ✅ EXACT MATCH: "${song.title}" - Score: ${score}`);
-          }
-          // Strategy 2: Title starts with query (very close match)
-          else if (titleLower.startsWith(songQuery)) {
-            score = 95;
-            console.log(`  ✅ STARTS WITH: "${song.title}" - Score: ${score}`);
-          }
-          // Strategy 3: Query starts with title (reverse match - e.g., "Faded" matches "play faded remix")
-          else if (songQuery.startsWith(titleLower)) {
-            score = 90;
-            console.log(`  ✅ QUERY STARTS WITH TITLE: "${song.title}" - Score: ${score}`);
-          }
-          // Strategy 4: Title contains query as complete substring
-          else if (titleLower.includes(songQuery)) {
-            score = 85;
-            console.log(`  ⚠️  CONTAINS: "${song.title}" - Score: ${score}`);
-          }
-          // Everything else gets score 0 - will go to YouTube
-          else {
-            console.log(`  ❌ NO MATCH: "${song.title}" - Score: 0`);
-          }
-
-          // Keep track of best match
-          if (score > matchScore) {
-            matchScore = score;
-            matchedSong = song;
-          }
-        });
-
-        console.log(`\n🎯 FINAL RESULT: Best match = "${matchedSong?.title || 'none'}" with score: ${matchScore}`);
-        console.log(`🎯 Threshold = 85 (will ${matchScore >= 85 ? 'PLAY LOCALLY' : 'SEARCH YOUTUBE'})\n`);
-
-        // Only accept matches with score >= 85 (VERY strict - only exact or substring matches)
-        if (matchedSong && matchScore >= 85) {
-          const songIndex = songs.findIndex(s => s.id === matchedSong!.id);
-          if (songIndex !== -1) {
-            onPlaySong(songIndex);
-            showFeedback(`🎵 Playing: ${matchedSong.title} by ${matchedSong.artist}`);
-            console.log(`✅✅✅ PLAYING LOCAL SONG with score ${matchScore}:`, matchedSong.title);
-            matched = true;
-          }
-        } else {
-          // Song not found locally - search YouTube Music
-          console.log(`❌ No local match found (best score: ${matchScore} < 85). Searching YouTube Music for: "${songQuery}"`);
-          showFeedback(`🔍 Searching YouTube for: "${songQuery}"...`);
-          setIsSearching(true);
-          
-          // Search YouTube Music API
-          searchAndAddYouTubeSong(songQuery);
-          matched = true;
-        }
+        // NEW LOGIC: Always search YouTube first, then check if already exists
+        showFeedback(`🔍 Searching YouTube for: "${songQuery}"...`);
+        setIsSearching(true);
+        
+        // Search YouTube Music API
+        searchAndAddYouTubeSong(songQuery);
+        matched = true;
       }
     }
 
