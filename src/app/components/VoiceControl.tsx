@@ -153,15 +153,19 @@ export function VoiceControl({
       .replace(/\s+/g, ' ')
       .trim();
 
-    console.log('Normalized command:', normalizedCommand);
+    console.log('📝 Normalized command:', normalizedCommand);
 
-    // Extract keywords
+    // Extract keywords - check if ANY of these words exist
     const words = normalizedCommand.split(' ');
+    console.log('📝 Words in command:', words);
+    
     const hasPlay = words.some(w => ['play', 'start', 'begin', 'resume'].includes(w));
     const hasPause = words.some(w => ['pause', 'stop', 'halt', 'freeze', 'wait'].includes(w));
     const hasNext = words.some(w => ['next', 'skip', 'forward', 'ahead'].includes(w));
     const hasPrevious = words.some(w => ['previous', 'back', 'last', 'before', 'earlier', 'rewind'].includes(w));
     const hasSong = words.some(w => ['song', 'track', 'music', 'tune'].includes(w));
+    
+    console.log('📝 Keyword detection:', { hasPlay, hasPause, hasNext, hasPrevious, hasSong });
 
     // PRIORITY 1: Play specific song by name
     // Check if user is trying to play a specific song
@@ -263,6 +267,7 @@ export function VoiceControl({
       onPause();
       showFeedback('⏸️ Paused');
       matched = true;
+      return; // Exit early
     }
 
     // PRIORITY 3: Next song
@@ -271,6 +276,7 @@ export function VoiceControl({
       onNext();
       showFeedback('⏭️ Next song');
       matched = true;
+      return; // Exit early
     }
 
     // PRIORITY 4: Previous song
@@ -279,6 +285,7 @@ export function VoiceControl({
       onPrevious();
       showFeedback('⏮️ Previous song');
       matched = true;
+      return; // Exit early
     }
 
     // PRIORITY 5: Simple play/resume (only if no specific song mentioned)
@@ -287,11 +294,13 @@ export function VoiceControl({
       onPlay();
       showFeedback('▶️ Playing');
       matched = true;
+      return; // Exit early
     }
 
     // No command recognized
-    if (!matched && normalizedCommand.length > 1) {
-      showFeedback('❓ Command not recognized. Try: "play", "pause", "next", or "play song [name]"');
+    if (!matched) {
+      console.log('❌ NO MATCH - Command not recognized');
+      showFeedback('❓ Try: \"play\", \"pause\", \"next\", or \"previous\"');
       console.log('Unrecognized command. Keywords detected:', { hasPlay, hasPause, hasNext, hasPrevious, hasSong });
     }
   }, [isPlaying, onPlay, onPause, onNext, onPrevious, onPlaySong, songs]);
