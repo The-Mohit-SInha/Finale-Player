@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Mic, MicOff, X, Volume2, AlertCircle, Check, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Song } from '../types';
+import { Song, YouTubeSong } from '../types';
 
 interface VoiceControlProps {
   onPlay: () => void;
@@ -9,6 +9,7 @@ interface VoiceControlProps {
   onNext: () => void;
   onPrevious: () => void;
   onPlaySong: (songIndex: number) => void;
+  onAddYouTubeSong: (youtubeSong: YouTubeSong) => Promise<void>;
   isPlaying: boolean;
   songs: Song[];
   externalTrigger?: boolean;
@@ -21,6 +22,7 @@ export function VoiceControl({
   onNext, 
   onPrevious, 
   onPlaySong,
+  onAddYouTubeSong,
   isPlaying, 
   songs,
   externalTrigger,
@@ -35,6 +37,7 @@ export function VoiceControl({
   const [error, setError] = useState('');
   const [isSupported, setIsSupported] = useState(true);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   
   const recognitionRef = useRef<any>(null);
   const feedbackTimeoutRef = useRef<number | null>(null);
@@ -133,6 +136,72 @@ export function VoiceControl({
     recognitionRef.current = recognition;
     console.log('Speech recognition initialized');
   }, [isListening, permissionGranted]);
+
+  // Search YouTube Music and add song automatically
+  const searchAndAddYouTubeSong = useCallback(async (query: string) => {
+    try {
+      console.log('🔍 Searching YouTube Music for:', query);
+      
+      const response = await fetch(
+        `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID || 'qcasdtsuqypsmloxfkbh'}.supabase.co/functions/v1/make-server-6ed35f1d/youtube/search`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjYXNkdHN1cXlwc21sb3hma2JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzMjQ5MzQsImV4cCI6MjA1NzkwMDkzNH0.T8njr1BtZCpEJ34PBRHLOWWaLdWdHHK1RJTXWMajVBM'}`
+          },
+          body: JSON.stringify({ query })
+        }
+      );
+
+      if (!response.ok) {
+        console.error('YouTube search failed:', response.statusText);
+        showFeedback(`❌ Search failed. Please try again.`);
+        setIsSearching(false);
+        return;
+      }
+
+      const data = await response.json();
+      console.log('YouTube search results:', data);
+
+      if (!data.items || data.items.length === 0) {
+        console.log('No results found on YouTube');
+        showFeedback(`❌ No results found for: "${query}"`);
+        setIsSearching(false);
+        return;
+      }
+
+      // Get the first result (most relevant)
+      const firstResult = data.items[0];
+      const youtubeSong: YouTubeSong = {
+        videoId: firstResult.id.videoId,
+        title: firstResult.snippet.title,
+        channelTitle: firstResult.snippet.channelTitle,
+        thumbnail: firstResult.snippet.thumbnails.high?.url || firstResult.snippet.thumbnails.default.url,
+        description: firstResult.snippet.description
+      };
+
+      console.log('Selected song:', youtubeSong.title, 'by', youtubeSong.channelTitle);
+      showFeedback(`✅ Found: ${youtubeSong.title}`);
+      
+      // Add the song to library
+      await onAddYouTubeSong(youtubeSong);
+      
+      // After adding, find and play it
+      setTimeout(() => {
+        // Songs state will be updated, so we need to wait a moment
+        const newSongIndex = songs.length; // It will be added at the end
+        onPlaySong(newSongIndex);
+        showFeedback(`🎵 Now playing: ${youtubeSong.title}`);
+        setIsSearching(false);
+      }, 500);
+
+    } catch (error) {
+      console.error('Error searching YouTube:', error);
+      showFeedback(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setIsSearching(false);
+    }
+  }, [onAddYouTubeSong, onPlaySong, songs.length]);
 
   const processVoiceCommand = useCallback((command: string) => {
     console.log('🎯 Processing command:', command);
@@ -254,8 +323,13 @@ export function VoiceControl({
             matched = true;
           }
         } else if (songQuery.length > 1) {
-          showFeedback(`❌ Couldn't find: "${songQuery}"`);
-          console.log(`No good match found. Best score: ${matchScore}`);
+          // Song not found locally - search YouTube Music
+          console.log(`No local match found. Searching YouTube Music for: ${songQuery}`);
+          showFeedback(`🔍 Searching YouTube for: "${songQuery}"...`);
+          setIsSearching(true);
+          
+          // Search YouTube Music API
+          searchAndAddYouTubeSong(songQuery);
           matched = true;
         }
       }
@@ -300,10 +374,10 @@ export function VoiceControl({
     // No command recognized
     if (!matched) {
       console.log('❌ NO MATCH - Command not recognized');
-      showFeedback('❓ Try: \"play\", \"pause\", \"next\", or \"previous\"');
+      showFeedback('❓ Try: \\\"play\\\", \\\"pause\\\", \\\"next\\\", or \\\"previous\\\"');
       console.log('Unrecognized command. Keywords detected:', { hasPlay, hasPause, hasNext, hasPrevious, hasSong });
     }
-  }, [isPlaying, onPlay, onPause, onNext, onPrevious, onPlaySong, songs]);
+  }, [isPlaying, onPlay, onPause, onNext, onPrevious, onPlaySong, songs, searchAndAddYouTubeSong]);
 
   processVoiceCommandRef.current = processVoiceCommand;
 
