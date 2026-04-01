@@ -2408,7 +2408,6 @@ export default function App() {
           setCurrentSongIndex(songIndex);
           setIsPlaying(true);
         }}
-        onAddYouTubeSong={handleAddYouTubeSong}
         isPlaying={isPlaying}
         songs={songs}
         externalTrigger={isVoiceControlOpen}

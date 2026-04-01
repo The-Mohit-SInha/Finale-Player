@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Mic, MicOff, X, Volume2, AlertCircle, Check, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Song, YouTubeSong } from '../types';
+import { Song } from '../types';
 
 interface VoiceControlProps {
   onPlay: () => void;
@@ -9,7 +9,6 @@ interface VoiceControlProps {
   onNext: () => void;
   onPrevious: () => void;
   onPlaySong: (songIndex: number) => void;
-  onAddYouTubeSong: (youtubeSong: YouTubeSong) => Promise<void>;
   isPlaying: boolean;
   songs: Song[];
   externalTrigger?: boolean;
@@ -22,7 +21,6 @@ export function VoiceControl({
   onNext, 
   onPrevious, 
   onPlaySong,
-  onAddYouTubeSong,
   isPlaying, 
   songs,
   externalTrigger,
@@ -37,7 +35,6 @@ export function VoiceControl({
   const [error, setError] = useState('');
   const [isSupported, setIsSupported] = useState(true);
   const [isInitializing, setIsInitializing] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
   
   const recognitionRef = useRef<any>(null);
   const feedbackTimeoutRef = useRef<number | null>(null);
@@ -137,93 +134,6 @@ export function VoiceControl({
     console.log('Speech recognition initialized');
   }, [isListening, permissionGranted]);
 
-  // Search YouTube Music and add song automatically (or play if already exists)
-  const searchAndAddYouTubeSong = useCallback(async (query: string) => {
-    try {
-      console.log('🔍 Searching YouTube Music for:', query);
-      
-      const response = await fetch(
-        `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID || 'qcasdtsuqypsmloxfkbh'}.supabase.co/functions/v1/make-server-6ed35f1d/youtube/search`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjYXNkdHN1cXlwc21sb3hma2JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzMjQ5MzQsImV4cCI6MjA1NzkwMDkzNH0.T8njr1BtZCpEJ34PBRHLOWWaLdWdHHK1RJTXWMajVBM'}`
-          },
-          body: JSON.stringify({ query })
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('YouTube search failed:', response.status, errorText);
-        showFeedback(`❌ Search failed: ${response.status}`);
-        setIsSearching(false);
-        return;
-      }
-
-      const data = await response.json();
-      console.log('YouTube search response:', data);
-
-      // Server returns { results: [...] }, not { items: [...] }
-      if (!data.results || data.results.length === 0) {
-        console.log('No results found on YouTube');
-        showFeedback(`❌ No results found for: "${query}"`);
-        setIsSearching(false);
-        return;
-      }
-
-      // Get the first result (most relevant)
-      const firstResult = data.results[0];
-      const videoId = firstResult.videoId;
-      const youtubeSong: YouTubeSong = {
-        videoId: videoId,
-        title: firstResult.title,
-        channelTitle: firstResult.channelTitle,
-        thumbnail: firstResult.thumbnail,
-        description: firstResult.description
-      };
-
-      console.log('🎯 Top YouTube result:', youtubeSong.title, 'by', youtubeSong.channelTitle);
-      console.log('🎯 Video ID:', videoId);
-      
-      // Check if this song already exists in library by videoId
-      const existingSongIndex = songs.findIndex(song => song.youtubeVideoId === videoId);
-      
-      if (existingSongIndex !== -1) {
-        // Song already exists - just play it
-        const existingSong = songs[existingSongIndex];
-        console.log('✅ Song already in library! Playing existing song:', existingSong.title);
-        showFeedback(`✅ Found in library: ${existingSong.title}`);
-        onPlaySong(existingSongIndex);
-        setTimeout(() => {
-          showFeedback(`🎵 Now playing: ${existingSong.title}`);
-          setIsSearching(false);
-        }, 1000);
-      } else {
-        // Song doesn't exist - add it and play
-        console.log('📥 Song not in library. Adding:', youtubeSong.title);
-        showFeedback(`📥 Adding: ${youtubeSong.title}...`);
-        
-        await onAddYouTubeSong(youtubeSong);
-        
-        // After adding, find and play it
-        setTimeout(() => {
-          // Songs state will be updated, so we need to wait a moment
-          const newSongIndex = songs.length; // It will be added at the end
-          onPlaySong(newSongIndex);
-          showFeedback(`🎵 Now playing: ${youtubeSong.title}`);
-          setIsSearching(false);
-        }, 500);
-      }
-
-    } catch (error) {
-      console.error('Error searching YouTube:', error);
-      showFeedback(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setIsSearching(false);
-    }
-  }, [onAddYouTubeSong, onPlaySong, songs]);
-
   const processVoiceCommand = useCallback((command: string) => {
     console.log('🎯 Processing command:', command);
     console.log('🎯 Current isPlaying state:', isPlaying);
@@ -267,16 +177,87 @@ export function VoiceControl({
 
       // If we have a meaningful query after removing keywords
       if (songQuery.length > 1) {
-        console.log('🎵 Play song command detected! Query:', songQuery);
-        console.log('🔍 ALWAYS searching YouTube first for best results...');
+        console.log('Searching for song:', songQuery);
         
-        // NEW LOGIC: Always search YouTube first, then check if already exists
-        showFeedback(`🔍 Searching YouTube for: "${songQuery}"...`);
-        setIsSearching(true);
-        
-        // Search YouTube Music API
-        searchAndAddYouTubeSong(songQuery);
-        matched = true;
+        // Find best matching song using multiple strategies
+        let matchedSong = null;
+        let matchScore = 0;
+
+        songs.forEach(song => {
+          const titleLower = song.title.toLowerCase();
+          const artistLower = song.artist.toLowerCase();
+          let score = 0;
+
+          // Strategy 1: Exact match (highest priority)
+          if (titleLower === songQuery || artistLower === songQuery) {
+            score = 100;
+          }
+          // Strategy 2: Title starts with query
+          else if (titleLower.startsWith(songQuery)) {
+            score = 90;
+          }
+          // Strategy 3: Artist starts with query
+          else if (artistLower.startsWith(songQuery)) {
+            score = 85;
+          }
+          // Strategy 4: Title contains all query words
+          else {
+            const queryWords = songQuery.split(' ').filter(w => w.length > 1);
+            const titleWords = titleLower.split(' ');
+            const artistWords = artistLower.split(' ');
+            
+            const titleMatches = queryWords.filter(qw => 
+              titleWords.some(tw => tw.includes(qw) || qw.includes(tw))
+            ).length;
+            
+            const artistMatches = queryWords.filter(qw => 
+              artistWords.some(aw => aw.includes(qw) || qw.includes(aw))
+            ).length;
+
+            if (titleMatches > 0) {
+              score = (titleMatches / queryWords.length) * 80;
+            } else if (artistMatches > 0) {
+              score = (artistMatches / queryWords.length) * 75;
+            }
+            // Strategy 5: Fuzzy match - check if query is contained anywhere
+            else if (titleLower.includes(songQuery)) {
+              score = 60;
+            } else if (artistLower.includes(songQuery)) {
+              score = 55;
+            }
+            // Strategy 6: Individual word matching
+            else {
+              const wordMatches = queryWords.filter(qw => 
+                titleLower.includes(qw) || artistLower.includes(qw)
+              ).length;
+              
+              if (wordMatches > 0) {
+                score = (wordMatches / queryWords.length) * 50;
+              }
+            }
+          }
+
+          // Keep track of best match
+          if (score > matchScore) {
+            matchScore = score;
+            matchedSong = song;
+          }
+        });
+
+        // Only accept matches with score > 40 (reasonable confidence)
+        if (matchedSong && matchScore > 40) {
+          const songIndex = songs.findIndex(s => s.id === matchedSong!.id);
+          if (songIndex !== -1) {
+            onPlaySong(songIndex);
+            showFeedback(`🎵 Playing: ${matchedSong.title} by ${matchedSong.artist}`);
+            console.log(`Matched song with score ${matchScore}:`, matchedSong.title);
+            matched = true;
+          }
+        } else if (songQuery.length > 1) {
+          showFeedback(`❌ Couldn't find: "${songQuery}"`);
+          console.log(`No good match found. Best score: ${matchScore}`);
+          matched = true;
+        }
       }
     }
 
@@ -319,10 +300,10 @@ export function VoiceControl({
     // No command recognized
     if (!matched) {
       console.log('❌ NO MATCH - Command not recognized');
-      showFeedback('❓ Try: \\\"play\\\", \\\"pause\\\", \\\"next\\\", or \\\"previous\\\"');
+      showFeedback('❓ Try: \"play\", \"pause\", \"next\", or \"previous\"');
       console.log('Unrecognized command. Keywords detected:', { hasPlay, hasPause, hasNext, hasPrevious, hasSong });
     }
-  }, [isPlaying, onPlay, onPause, onNext, onPrevious, onPlaySong, songs, searchAndAddYouTubeSong]);
+  }, [isPlaying, onPlay, onPause, onNext, onPrevious, onPlaySong, songs]);
 
   processVoiceCommandRef.current = processVoiceCommand;
 
