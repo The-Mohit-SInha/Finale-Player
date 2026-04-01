@@ -155,16 +155,18 @@ export function VoiceControl({
       );
 
       if (!response.ok) {
-        console.error('YouTube search failed:', response.statusText);
-        showFeedback(`❌ Search failed. Please try again.`);
+        const errorText = await response.text();
+        console.error('YouTube search failed:', response.status, errorText);
+        showFeedback(`❌ Search failed: ${response.status}`);
         setIsSearching(false);
         return;
       }
 
       const data = await response.json();
-      console.log('YouTube search results:', data);
+      console.log('YouTube search response:', data);
 
-      if (!data.items || data.items.length === 0) {
+      // Server returns { results: [...] }, not { items: [...] }
+      if (!data.results || data.results.length === 0) {
         console.log('No results found on YouTube');
         showFeedback(`❌ No results found for: "${query}"`);
         setIsSearching(false);
@@ -172,14 +174,14 @@ export function VoiceControl({
       }
 
       // Get the first result (most relevant)
-      const firstResult = data.items[0];
-      const videoId = firstResult.id.videoId;
+      const firstResult = data.results[0];
+      const videoId = firstResult.videoId;
       const youtubeSong: YouTubeSong = {
         videoId: videoId,
-        title: firstResult.snippet.title,
-        channelTitle: firstResult.snippet.channelTitle,
-        thumbnail: firstResult.snippet.thumbnails.high?.url || firstResult.snippet.thumbnails.default.url,
-        description: firstResult.snippet.description
+        title: firstResult.title,
+        channelTitle: firstResult.channelTitle,
+        thumbnail: firstResult.thumbnail,
+        description: firstResult.description
       };
 
       console.log('🎯 Top YouTube result:', youtubeSong.title, 'by', youtubeSong.channelTitle);
